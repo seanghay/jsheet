@@ -6,42 +6,90 @@ import "codemirror/mode/javascript/javascript.js";
 import "codemirror/theme/darcula.css";
 import "codemirror/addon/edit/closebrackets";
 import * as Babel from "@babel/standalone";
+import { onMounted, watch } from "@vue/runtime-core";
+import { utils, writeFile } from "xlsx";
+import canvasDatagrid from "canvas-datagrid";
 
+const gridContainer = ref();
+const grid = ref(null);
+const rowData = ref([]);
+
+onMounted(() => {
+  const dataGrid = canvasDatagrid();
+  const parent = gridContainer.value;
+  const width = parent.clientWidth;
+  const height = parent.clientHeight;
+
+  dataGrid.data = [];
+
+  dataGrid.style.height = height + "px";
+  dataGrid.style.width = width + "px";
+
+  parent.appendChild(dataGrid);
+  grid.value = dataGrid;
+
+  compute()
+});
+
+const transpiled = ref();
 const code = ref(`
+// your excel headers
 export const headers = {
-  id: 'ID Number',
-  name: 'Name',
+  id: "User ID"
 };
 
+// your data
 export const values = [
-  { 
-  	id: 1,
-    name: "Hello Name",
+  {
+    id: Math.floor(Math.random() * 69)
   }
 ];
+
 `);
-const exportsOutput = ref({});
 
 function initializer(interpreter, globalObject) {
   interpreter.setProperty(
     globalObject,
     "exports",
-    interpreter.nativeToPseudo(exportsOutput.value),
+    interpreter.nativeToPseudo(exportsOutput.value)
   );
 }
 
-const transpiled = computed(() => {
-  try {
-    const es5 = Babel.transform(code.value, { presets: ["env"] }).code;
-    const interpreter = new Interpreter(`${es5}; exports;`, initializer);
-    interpreter.run();
-    const out = interpreter.pseudoToNative(interpreter.value);
-    console.log(out);
-    return es5;
-  } catch (e) {
-    console.warn(e);
-    return "";
-  }
+function compute() {
+  setTimeout(() => {
+    try {
+      const es5 = Babel.transform(code.value, { presets: ["env"] }).code;
+      const interpreter = new Interpreter(`${es5}; exports;`, initializer);
+      interpreter.run();
+      const out = interpreter.pseudoToNative(interpreter.value);
+      console.log(out);
+      const { headers, values } = out;
+      const rows = values.map((value) => {
+        const obj = {};
+        Object.keys(headers).forEach((headerKey) => {
+          const newValue = value[headerKey];
+          const newKey = headers[headerKey];
+          obj[newKey] = newValue;
+        });
+        return obj;
+      });
+
+      rowData.value = rows;
+      grid.value.data = rows;
+
+      transpiled.value = JSON.stringify(rows, null, 2);
+    } catch (e) {
+      console.warn(e);
+      return "";
+    }
+  });
+}
+
+watch(code, compute);
+
+const exportsOutput = ref({
+  values: [],
+  headers: [],
 });
 
 const cmOptions = ref({
@@ -54,6 +102,14 @@ const cmOptions = ref({
   lineWrapping: true,
   autoCloseBrackets: true,
 });
+
+function exportAsExcelFile() {
+  const sheet = utils.json_to_sheet(rowData.value);
+  const wb = utils.book_new();
+  utils.book_append_sheet(wb, sheet, "Sheet1");
+  const filename = "file.xlsx";
+  writeFile(wb, filename);
+}
 </script>
 
 <template>
@@ -61,13 +117,10 @@ const cmOptions = ref({
     <div class="sidebar sidebar-left">
       <Codemirror :options="cmOptions" v-model:value="code" />
     </div>
-    <div class="sidebar sidebar-right">
-      <p>
-        <code>
-          {{ transpiled }}
-        </code>
-      </p>
-    </div>
+    <div ref="gridContainer" class="sidebar sidebar-right"></div>
+  </div>
+  <div id="menu-controls">
+    <button @click="exportAsExcelFile()">Export as Excel</button>
   </div>
 </template>
 
@@ -97,5 +150,35 @@ const cmOptions = ref({
 .CodeMirror * {
   font-family: "JetBrains Mono", monospace;
   font-size: 16px;
+}
+
+#menu-controls {
+  text-align: right;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 1em 2em;
+  background: rgb(36, 36, 36, 0.9);
+  border-top: 1px solid rgba(36, 36, 36, 0.3);
+}
+
+#menu-controls button {
+  font-family: Arial, Helvetica, sans-serif;
+  border: none;
+  padding: 0.5em 1em;
+  background: rgba(255, 255, 255, 0.15);
+  color: white;
+  cursor: pointer;
+  border-radius: 0.3em;
+  transition: 0.2s ease;
+}
+
+#menu-controls button:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+#menu-controls button:active {
+  background: rgba(255, 255, 255, 0.2);
 }
 </style>
