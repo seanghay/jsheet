@@ -125,6 +125,8 @@ function exportAsExcelFile() {
     <div ref="gridContainer" class="sidebar sidebar-right"></div>
   </div>
   <div id="menu-controls">
+    <a href="https://github.com/seanghay/jsheet">View on GitHub</a>
+    <div class="spacer"></div>
     <button @click="exportAsExcelFile()">Export as Excel</button>
   </div>
 </template>
@@ -159,6 +161,8 @@ function exportAsExcelFile() {
 }
 
 #menu-controls {
+  display: flex;
+  font-family: Arial, Helvetica, sans-serif;
   text-align: right;
   position: fixed;
   bottom: 0;
@@ -167,10 +171,11 @@ function exportAsExcelFile() {
   padding: 1em 2em;
   background: rgb(36, 36, 36, 0.9);
   border-top: 1px solid rgba(36, 36, 36, 0.3);
+  align-items: center;
 }
 
 #menu-controls button {
-  font-family: Arial, Helvetica, sans-serif;
+  
   border: none;
   padding: 0.5em 1em;
   background: rgba(255, 255, 255, 0.15);
@@ -180,11 +185,22 @@ function exportAsExcelFile() {
   transition: 0.2s ease;
 }
 
+.spacer {
+  flex-grow: 1;
+}
+
 #menu-controls button:hover {
   background: rgba(255, 255, 255, 0.3);
 }
 
 #menu-controls button:active {
   background: rgba(255, 255, 255, 0.2);
+}
+
+a {
+  color: rgb(165, 165, 165);
+  text-decoration: none;
+  font-display: inherit;
+  font-size: 1em;
 }
 </style>
