@@ -1,7 +1,8 @@
-# Vue 3 + Vite
+# JSheet
 
-This template should help get you started developing with Vue 3 in Vite. The template uses Vue 3 `<script setup>` SFCs, check out the [script setup docs](https://v3.vuejs.org/api/sfc-script-setup.html#sfc-script-setup) to learn more.
+A web application for creating XLSX file with JavaScript
 
-## Recommended IDE Setup
 
-- [VSCode](https://code.visualstudio.com/) + [Volar](https://marketplace.visualstudio.com/items?itemName=johnsoncodehk.volar)
+## Screenshot
+
+<img src=https://user-images.githubusercontent.com/15277233/140655938-4ca7e3e5-84c9-4341-ac81-8d01c9cff80d.png width=1000>
