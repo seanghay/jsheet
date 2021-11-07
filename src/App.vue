@@ -15,20 +15,23 @@ const grid = ref(null);
 const rowData = ref([]);
 
 onMounted(() => {
-  const dataGrid = canvasDatagrid();
+
+  const dataGrid = canvasDatagrid({
+    editable: false,
+  });
   const parent = gridContainer.value;
   const width = parent.clientWidth;
   const height = parent.clientHeight;
 
   dataGrid.data = [];
-
   dataGrid.style.height = height + "px";
   dataGrid.style.width = width + "px";
+
 
   parent.appendChild(dataGrid);
   grid.value = dataGrid;
 
-  compute()
+  compute();
 });
 
 const transpiled = ref();
@@ -126,6 +129,7 @@ function exportAsExcelFile() {
 
 <style lang="scss">
 #jsheet {
+
   display: grid;
   grid-template-columns: 1fr 1fr;
   position: fixed;
