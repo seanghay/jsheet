@@ -34,7 +34,8 @@ onMounted(() => {
   compute();
 });
 
-const transpiled = ref();
+const filenameRef = ref('file.xlsx');
+
 const code = ref(`
 // your excel headers
 export const headers = {
@@ -48,6 +49,7 @@ export const values = [
   }
 ];
 
+export const filename = \`file-\$\{Date.now()\}.xlsx\`;
 `);
 
 function initializer(interpreter, globalObject) {
@@ -66,7 +68,7 @@ function compute() {
       interpreter.run();
       const out = interpreter.pseudoToNative(interpreter.value);
       console.log(out);
-      const { headers, values } = out;
+      const { headers, values, filename = 'file.xlsx' } = out;
       const rows = values.map((value) => {
         const obj = {};
         Object.keys(headers).forEach((headerKey) => {
@@ -77,10 +79,10 @@ function compute() {
         return obj;
       });
 
+      filenameRef.value = filename;
       rowData.value = rows;
       grid.value.data = rows;
 
-      transpiled.value = JSON.stringify(rows, null, 2);
     } catch (e) {
       console.warn(e);
       return "";
@@ -110,7 +112,7 @@ function exportAsExcelFile() {
   const sheet = utils.json_to_sheet(rowData.value);
   const wb = utils.book_new();
   utils.book_append_sheet(wb, sheet, "Sheet1");
-  const filename = "file.xlsx";
+  const filename = encodeURIComponent(filenameRef.value);
   writeFile(wb, filename);
 }
 </script>
