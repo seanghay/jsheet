@@ -7,15 +7,16 @@ import "codemirror/theme/darcula.css";
 import "codemirror/addon/edit/closebrackets";
 import * as Babel from "@babel/standalone";
 import { onMounted, watch } from "@vue/runtime-core";
-import { utils, writeFile } from "xlsx";
+import { utils, writeFile, readFile, read } from "xlsx";
 import canvasDatagrid from "canvas-datagrid";
+import stripIndent from 'strip-indent'
 
 const gridContainer = ref();
 const grid = ref(null);
 const rowData = ref([]);
+const fileRef = ref(null);
 
 onMounted(() => {
-
   const dataGrid = canvasDatagrid({
     editable: false,
   });
@@ -27,14 +28,13 @@ onMounted(() => {
   dataGrid.style.height = height + "px";
   dataGrid.style.width = width + "px";
 
-
   parent.appendChild(dataGrid);
   grid.value = dataGrid;
 
   compute();
 });
 
-const filenameRef = ref('file.xlsx');
+const filenameRef = ref("file.xlsx");
 
 const code = ref(`
 // your excel headers
@@ -68,7 +68,7 @@ function compute() {
       interpreter.run();
       const out = interpreter.pseudoToNative(interpreter.value);
       console.log(out);
-      const { headers, values, filename = 'file.xlsx' } = out;
+      const { headers, values, filename = "file.xlsx" } = out;
       const rows = values.map((value) => {
         const obj = {};
         Object.keys(headers).forEach((headerKey) => {
@@ -82,7 +82,6 @@ function compute() {
       filenameRef.value = filename;
       rowData.value = rows;
       grid.value.data = rows;
-
     } catch (e) {
       console.warn(e);
       return "";
@@ -115,6 +114,37 @@ function exportAsExcelFile() {
   const filename = encodeURIComponent(filenameRef.value);
   writeFile(wb, filename);
 }
+
+function onFileChange(e) {
+
+  const file = e.target.files[0];
+  const reader = new FileReader();
+ 
+ reader.onload = () => {
+
+    const buffer = reader.result;
+    const wb = read(buffer, { type: "buffer" });
+    const sheetName = wb.SheetNames[0];
+    const ws = wb.Sheets[sheetName];
+    const rows = utils.sheet_to_json(ws);
+    const headers = new Set();
+    
+    rows.forEach(row => {
+      const values = Object.keys(row);
+      values.forEach(it => headers.add(it));
+    });
+    const headersObject = Object.fromEntries(Array.from(headers).map(key => [key, key]));
+    const content = stripIndent(`
+export const headers = ${JSON.stringify(headersObject, null, 2)}
+
+export const values = ${JSON.stringify(rows, null, 2)}
+    `);
+
+  console.log(content)
+  };
+ 
+  reader.readAsArrayBuffer(file);
+}
 </script>
 
 <template>
@@ -127,13 +157,22 @@ function exportAsExcelFile() {
   <div id="menu-controls">
     <a href="https://github.com/seanghay/jsheet">View on GitHub</a>
     <div class="spacer"></div>
+    <input
+      accept="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+      @change="onFileChange"
+      type="file"
+      name="file"
+      id="file"
+      hidden
+      ref="fileRef"
+    />
+    <button @click="fileRef.click()">Import XLSX</button>
     <button @click="exportAsExcelFile()">Export as Excel</button>
   </div>
 </template>
 
 <style lang="scss">
 #jsheet {
-
   display: grid;
   grid-template-columns: 1fr 1fr;
   position: fixed;
@@ -175,14 +214,15 @@ function exportAsExcelFile() {
 }
 
 #menu-controls button {
-  
   border: none;
-  padding: 0.5em 1em;
-  background: rgba(255, 255, 255, 0.15);
+  padding: 0.4em 0.8em;
+  background: rgba(255, 255, 255, 0.1);
   color: white;
   cursor: pointer;
   border-radius: 0.3em;
   transition: 0.2s ease;
+  margin-left: 8px;
+  font-size: 0.95em;
 }
 
 .spacer {
@@ -190,11 +230,11 @@ function exportAsExcelFile() {
 }
 
 #menu-controls button:hover {
-  background: rgba(255, 255, 255, 0.3);
+  background: rgba(255, 255, 255, 0.2);
 }
 
 #menu-controls button:active {
-  background: rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.15);
 }
 
 a {
