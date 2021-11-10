@@ -140,7 +140,9 @@ export const headers = ${JSON.stringify(headersObject, null, 2)}
 export const values = ${JSON.stringify(rows, null, 2)}
     `);
 
-  console.log(content)
+    code.value = content;
+    compute();
+    
   };
  
   reader.readAsArrayBuffer(file);
